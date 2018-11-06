@@ -11,6 +11,7 @@ init_printing(use_unicode=False, wrap_line=False)
 # Метод простой итерации
 def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('\nМетод простой итерации\n')
+    i = 0
     xi = x0
     yi = y0
     # Вычисление производных
@@ -21,17 +22,26 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     # Создание кортежей соответствия переменных и  их значений
     con_list = [(sym_x, xi), (sym_y, yi)]
     # Составление Якобиана
-    # TODO: Исправить типы в Якобиане
-    jacobean = Matrix([df1dx, df1dy],
-                      [df2dx, df2dy])
+    # Создание матрицы Якоби
+    jacobi_matrix = Matrix([[df1dx, df1dy],
+                            [df2dx, df2dy]])
     # Вывод Якобиана
-    out_file.write('\nЯкобиан\n{0}'.format(np.array2string(jacobean)).replace('[', '').replace(']', ''))
-    # Вычисление числа обусловленности Якобиана
-    jacobean_norm = linalg.norm(jacobean)
-    out_file.write('\nНорма Якобиана = {0}'.format(jacobean_norm))
-    i = 0
-    xi = x0
-    yi = y0
+    out_file.write('\nМатрица Якоби\n{0}'
+                   .format(np.array2string(np.array(jacobi_matrix)))
+                   .replace('[', '').replace(']', ''))
+    # Подстановка x0 и y0 в матрицу Якоби
+    value_of_jacobi_matrix = jacobi_matrix.subs(con_list)
+    # Вывод значений матрицы Якоби
+    out_file.write('\nЗначение матрицы Якоби в точке (x0,y0)\n{0}'
+                   .format(np.array2string(np.array(value_of_jacobi_matrix).astype(float64)))
+                   .replace('[', '').replace(']', ''))
+    # Вычисление нормы матрицы Якоби
+    jacobi_matrix_norm = linalg.norm(value_of_jacobi_matrix, np.inf)
+    # Вывод нормы матрицы Якоби
+    out_file.write('\nНорма матрицы Якоби = {0}'.format(jacobi_matrix_norm))
+    # Вычисление нормы невязки
+    residual_norm = max(abs(solve(f1, x0)), abs(solve(f2, y0)))
+    # Вывод заголовка
     out_file.write('\nItr   |   x   |   y   | Норма невязки | F1 | F2 | Норма Якобиана\n')
     while residual_norm >= eps:
         # Шаг итерации
@@ -40,16 +50,16 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
         f1i = solve(f1, xi)
         f2i = solve(f2, yi)
         # Вычисление нормы Якобиана
-        jacobean = Matrix([df1dx.subs(con_list), df1dy.subs(con_list)],
-                          [df2dx.subs(con_list), df2dy.subs(con_list)]).astype(float)
-        jacobean_norm = linalg.norm(jacobean)
+        jacobi_matrix = Matrix([[df1dx.subs(con_list), df1dy.subs(con_list)],
+                                [df2dx.subs(con_list), df2dy.subs(con_list)]])
+        jacobi_matrix_norm = linalg.norm(jacobi_matrix)
         # Вычисление значения функций в точке xi,yi
         F1 = f2i - f1i
         F2 = f1i - f2i
         # Вычисление нормы невязки
         residual_norm = max(abs(f1i, f2i))
         # Вывод результатов
-        out_file.write(i + ' ' + f2i + ' ' + f1i + ' ' + residual_norm + ' ' + F1 + ' ' + F2 + ' ' + jacobean_norm)
+        out_file.write(i + ' ' + f2i + ' ' + f1i + ' ' + residual_norm + ' ' + F1 + ' ' + F2 + ' ' + jacobi_matrix_norm)
         # Вычисление следующего приближения
         xi = f2i
         yi = f1i
@@ -96,7 +106,8 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
         # Вычисление нормы невязки
         residual_norm = max(abs((x - xi), (y - yi)))
         # Вывод результатов
-        out_file.write(i + ' ' + x + ' ' + y + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(con_list) + '\n')
+        out_file.write(
+            i + ' ' + x + ' ' + y + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(con_list) + '\n')
 
 
 # Метод градиентного спуска
@@ -126,7 +137,9 @@ def gradient_descent_method(x0, y0, f1, f2, eps, out_file):
         y = y0 - alpha * diff(ff, y).sub(con_list0)
         residual_norm = max(fabs(diff(ff, x).sub(con_list)), fabs(diff(ff, y).sub(con_list)))
         # Вывод результатов
-        out_file.write(i + ' ' + x + ' ' + y + ' ' + alpha + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(con_list) + ' ' + ff.sub(con_list) + ' ' + k + '\n')
+        out_file.write(
+            i + ' ' + x + ' ' + y + ' ' + alpha + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(
+                con_list) + ' ' + ff.sub(con_list) + ' ' + k + '\n')
 
 
 # Метод половинного деления
