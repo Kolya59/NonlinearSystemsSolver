@@ -1,4 +1,5 @@
 from sympy.parsing.sympy_parser import parse_expr
+
 from Solvers import *
 
 # Допустимая погрешность
@@ -25,7 +26,7 @@ output_file.write('x0 = ' + str(x0) + '\ny0 = ' + str(y0) + '\nf1: ' + f1_str + 
 simple_iteration_method(x0, y0, f1, f2, eps, output_file)
 
 # Метод Ньютона
-# newton_method(x0, y0, f1, f2, eps, output_file)
+newton_method(x0, y0, f1, f2, eps, output_file)
 
 # Метод градиентного спуска
-#gradient_descent_method(x0, y0, f1, f2, eps, output_file)
+gradient_descent_method(x0, y0, f1, f2, eps, output_file)

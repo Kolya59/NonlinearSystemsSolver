@@ -1,7 +1,6 @@
 from __future__ import division
 
 from numpy import *
-import numpy as np
 from sympy import *
 
 sym_x, sym_y = symbols('x y')
@@ -42,7 +41,8 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     # Вычисление нормы невязки
     residual_norm = max(abs(solve(f1.subs(sym_x, x0))[0]), abs(solve(f2.subs(sym_y, y0))[0]))
     # Вывод заголовка
-    out_file.write('\nItr |   x           |       y       | Норма невязки     |     F1        |       F2        | Норма Якобиана\n')
+    out_file.write(
+        '\nItr |   x           |       y       | Норма невязки     |     F1        |       F2        | Норма Якобиана\n')
     while residual_norm >= eps:
         # Шаг итерации
         i += 1
@@ -72,8 +72,8 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
 def newton_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('Метод Ньютона\n')
     i = 0
-    xi = x0
-    yi = y0
+    xi = x = x0
+    yi = y = y0
     # Вычисление производных
     df1dx = diff(f1, sym_x)
     df1dy = diff(f1, sym_y)
@@ -81,7 +81,6 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
     df2dy = diff(f2, sym_y)
     # Создание кортежей соответствия переменных и  их значений
     con_list_i = [(sym_x, xi), (sym_y, yi)]
-    con_list = [(sym_x, x), (sym_y, y)]
     # Создание матрицы Якоби
     jacobi_matrix = Matrix([[df1dx, df1dy],
                             [df2dx, df2dy]])
@@ -102,22 +101,26 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
     # Вывод заголовка
     out_file.write('\nItr   |   x   |   y   | Норма невязки | F1 | F2\n')
     # Вычисление нормы невязки
-    residual_norm = max(abs(solve(f1.subs(sym_x, x0))[0]), abs(solve(f2.subs(sym_y, y0))[0]))
+    residual_norm = eps + 1
     # Вычисление значений с необходимой точностью
     while residual_norm >= eps:
         # Шаг итерации
-        ++i
+        i += 1
         # Подстановка предыдущего приближения
         xi = x
         yi = y
         # Создание кортежей соответствия переменных и  их значений
-        con_list = [(sym_x, x), (sym_y, y)]
         con_list_i = [(sym_x, xi), (sym_y, yi)]
-        # Вычисление матрицы Якоби в точке (xi, yi)
-        jacobi_matrix_value = jacobi_matrix.subs(con_list)
+        # Вычисление матрицы, обратной матрице Якоби в точке (xi, yi)
+        jacobi_matrix_value = (jacobi_matrix ** -1).subs(con_list_i)
         # Вычисление нового приближения
-        x = xi - jacobi_matrix_value[0][0] * f1.sub(con_list_i) - jacobi_matrix_value[0][1] * f2.sub(con_list_i)
-        y = yi - jacobi_matrix_value[1][0] * f1.sub(con_list_i) - jacobi_matrix_value[1][1] * f2.sub(con_list_i)
+        x = xi - jacobi_matrix_value[0, 0] * f1.subs(con_list_i) - jacobi_matrix_value[0, 1] * f2.subs(con_list_i)
+        y = yi - jacobi_matrix_value[1, 0] * f1.subs(con_list_i) - jacobi_matrix_value[1, 1] * f2.subs(con_list_i)
+        # Создание кортежей соответствия переменных и  их значений
+        con_list = [(sym_x, x), (sym_y, y)]
+        # Вычисление значения функции в точке (x,y)
+        f1_value = f1.subs(con_list)
+        f2_value = f2.subs(con_list)
         # Вычисление нормы невязки
         residual_norm = max(abs(x - xi), abs(y - yi))
         # Вывод результатов
@@ -128,56 +131,63 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
 # Метод градиентного спуска
 def gradient_descent_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('\n Метод градиентного спуска\n')
+    x = x0
+    y = y0
     i = 0
     # TODO: Что такое k
     k = 0.5
-    # ff(x,y) = f1(x,y) + f2(x,y)
-    ff = f1 + f2
-    # Создание кортежей соответствия переменных и  их значений
-    con_list0 = [(sym_x, x0), (sym_y, y0)]
-    con_list = [(sym_x, x0), (sym_y, y0)]
-    # TODO:Вывод градиента
-    out_file.write()
+    # ff(x,y) = (f1(x,y))^2 + (f2(x,y))ˆ2
+    ff = f1 ** 2 + f2 ** 2
+    # Вывод градиента
+    out_file.write(str([diff(ff, sym_x), diff(ff, sym_y)]))
     # Вывод заголовка
     out_file.write('\nItr   |   x   |   y   |   Alpha   | Норма невязки | F1 | F2 | FF | k |\n')
     # Вычисление нормы
-    residual_norm = max()
+    residual_norm = eps + 1
     while residual_norm >= eps:
         # Итерационный шаг
-        ++i
+        i += 1
         x0 = x
         y0 = y
-        alpha = dihotomia(f1, f2, ff, -10000, 100000, x0, y0, eps)
-        x = x0 - alpha * diff(ff, x).sub(con_list0)
-        y = y0 - alpha * diff(ff, y).sub(con_list0)
-        residual_norm = max(fabs(diff(ff, x).sub(con_list)), fabs(diff(ff, y).sub(con_list)))
+        # Вычисление alpha
+        alpha = dihotomia(ff, -10000, 10000, x0, y0, eps)
+        # Создание кортежей соответствия переменных и  их значений
+        con_list0 = [(sym_x, x0), (sym_y, y0)]
+        # Вычисление следующего приближения
+        x = x0 - alpha * diff(ff, x).subs(con_list0)
+        y = y0 - alpha * diff(ff, y).subs(con_list0)
+        # Создание кортежей соответствия переменных и  их значений
+        con_list = [(sym_x, x), (sym_y, y)]
+        # Вычисление нормы
+        residual_norm = max(fabs(diff(ff, x).subs(con_list)), fabs(diff(ff, y).subs(con_list)))
         # Вывод результатов
-        out_file.write(
-            i + ' ' + x + ' ' + y + ' ' + alpha + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(
-                con_list) + ' ' + ff.sub(con_list) + ' ' + k + '\n')
+        out_file.write('{0} {1} {2} {3} {4} {5} {6} {7} {8}\n').format(i, x, y, alpha, residual_norm, f1.subs(con_list),
+                                                                       f2.subs(con_list), ff.subs(con_list), k)
 
 
 # Метод половинного деления
-def dihotomia(f1, f2, ff, a0, b0, x, y, eps):
+def dihotomia(ff, a0, b0, x, y, eps):
     # Величина на которую мы отклонимся от середины отрезка
     delta = 0.5 * eps
     # Отрезок локализации минимума
-    ak = a0, bk = b0
+    ak = a0
+    bk = b0
     # Пока длина отрезка больше заданной точности
     while (bk - ak) >= eps:
         # Точка, отличающаяся от середины на дельту
         lk = (ak + bk - delta) / 2
         mk = (ak + bk + delta) / 2
-        # Проверка в какую часть попадает точка минимума слева от разбиения или справа и выбор соответствующей точки
-        if g(f1, f2, x, y, lk) <= g(f1, f2, x, y, mk):
+        # Проверка в какую часть попадает точка минимума слева от разбиения или справа, выбор соответствующей точки
+        if g(ff, x, y, lk) <= g(ff, x, y, mk):
             # Правая граница отрезка локализации равна mk
             bk = mk
         else:
-            # Левая граница отрезка локализации равна mk
+            # Левая граница отрезка локализации равна lk
             ak = lk
     # Возврат точки минимума
     return (ak + bk) / 2
 
 
-def g(f1, f2, x, y, alpha):
-    return (x - alpha * diff(f1, x).sub()) ** 2 + (y - alpha * diff(f2, y).sub()) ** 2
+def g(f, x, y, alpha):
+    return (x - alpha * diff(f, x).subs([(sym_x, x), (sym_y, y)])) ** 2 + \
+           (y - alpha * diff(f, y).subs([(sym_x, x), (sym_y, y)])) ** 2
