@@ -1,6 +1,7 @@
 from __future__ import division
 
 from numpy import *
+import numpy as np
 from sympy import *
 
 sym_x, sym_y = symbols('x y')
@@ -20,8 +21,7 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     df2dx = diff(f2, sym_x)
     df2dy = diff(f2, sym_y)
     # Создание кортежей соответствия переменных и  их значений
-    con_list = [(sym_x, xi), (sym_y, yi)]
-    # Составление Якобиана
+    con_list_i = [(sym_x, xi), (sym_y, yi)]
     # Создание матрицы Якоби
     jacobi_matrix = Matrix([[df1dx, df1dy],
                             [df2dx, df2dy]])
@@ -30,7 +30,7 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
                    .format(np.array2string(np.array(jacobi_matrix)))
                    .replace('[', '').replace(']', ''))
     # Подстановка x0 и y0 в матрицу Якоби
-    value_of_jacobi_matrix = jacobi_matrix.subs(con_list)
+    value_of_jacobi_matrix = jacobi_matrix.subs(con_list_i)
     # Вывод значений матрицы Якоби
     out_file.write('\nЗначение матрицы Якоби в точке (x0,y0)\n{0}'
                    .format(np.array2string(np.array(value_of_jacobi_matrix).astype(float64)))
@@ -40,29 +40,31 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     # Вывод нормы матрицы Якоби
     out_file.write('\nНорма матрицы Якоби = {0}'.format(jacobi_matrix_norm))
     # Вычисление нормы невязки
-    residual_norm = max(abs(solve(f1, x0)), abs(solve(f2, y0)))
+    residual_norm = max(abs(solve(f1.subs(sym_x, x0))[0]), abs(solve(f2.subs(sym_y, y0))[0]))
     # Вывод заголовка
-    out_file.write('\nItr   |   x   |   y   | Норма невязки | F1 | F2 | Норма Якобиана\n')
+    out_file.write('\nItr |   x           |       y       | Норма невязки     |     F1        |       F2        | Норма Якобиана\n')
     while residual_norm >= eps:
         # Шаг итерации
-        ++i
+        i += 1
         # Вычисление xi,yi
-        f1i = solve(f1, xi)
-        f2i = solve(f2, yi)
+        y = solve(f1.subs(sym_x, xi))[0]
+        x = solve(f2.subs(sym_y, yi))[0]
+        # Создание кортежей соответствия переменных и  их значений
+        con_list = [(sym_x, x), (sym_y, y)]
+        con_list_i = [(sym_x, xi), (sym_y, yi)]
         # Вычисление нормы Якобиана
-        jacobi_matrix = Matrix([[df1dx.subs(con_list), df1dy.subs(con_list)],
-                                [df2dx.subs(con_list), df2dy.subs(con_list)]])
-        jacobi_matrix_norm = linalg.norm(jacobi_matrix)
+        jacobi_matrix_norm = linalg.norm(jacobi_matrix.subs(con_list_i), np.inf)
         # Вычисление значения функций в точке xi,yi
-        F1 = f2i - f1i
-        F2 = f1i - f2i
+        f1_value = f1.subs(con_list)
+        f2_value = f2.subs(con_list)
         # Вычисление нормы невязки
-        residual_norm = max(abs(f1i, f2i))
+        residual_norm = max(abs(f1_value), abs(f2_value))
         # Вывод результатов
-        out_file.write(i + ' ' + f2i + ' ' + f1i + ' ' + residual_norm + ' ' + F1 + ' ' + F2 + ' ' + jacobi_matrix_norm)
+        out_file.write(
+            '{0} {1} {2} {3} {4} {5} {6}\n'.format(i, x, y, residual_norm, f1_value, f2_value, jacobi_matrix_norm))
         # Вычисление следующего приближения
-        xi = f2i
-        yi = f1i
+        xi = x
+        yi = y
 
 
 # Метод Ньютона
@@ -70,8 +72,8 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
 def newton_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('Метод Ньютона\n')
     i = 0
-    xi = x = x0
-    yi = y = y0
+    xi = x0
+    yi = y0
     # Вычисление производных
     df1dx = diff(f1, sym_x)
     df1dy = diff(f1, sym_y)
@@ -80,34 +82,47 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
     # Создание кортежей соответствия переменных и  их значений
     con_list_i = [(sym_x, xi), (sym_y, yi)]
     con_list = [(sym_x, x), (sym_y, y)]
-    # Составление Якобиана
-    # TODO: Исправить типы в Якобиане
-    jacobean = Matrix([df1dx, df1dy],
-                      [df2dx, df2dy])
+    # Создание матрицы Якоби
+    jacobi_matrix = Matrix([[df1dx, df1dy],
+                            [df2dx, df2dy]])
     # Вывод Якобиана
-    out_file.write('\nЯкобиан\n{0}'.format(np.array2string(jacobean)).replace('[', '').replace(']', ''))
-    # Вычисление нормы Якобиана
-    norm = linalg.norm(jacobean)
+    out_file.write('\nМатрица Якоби\n{0}'
+                   .format(np.array2string(np.array(jacobi_matrix)))
+                   .replace('[', '').replace(']', ''))
+    # Подстановка x0 и y0 в матрицу Якоби
+    value_of_jacobi_matrix = jacobi_matrix.subs(con_list_i)
+    # Вывод значений матрицы Якоби
+    out_file.write('\nЗначение матрицы Якоби в точке (x0,y0)\n{0}'
+                   .format(np.array2string(np.array(value_of_jacobi_matrix).astype(float64)))
+                   .replace('[', '').replace(']', ''))
+    # Вычисление нормы матрицы Якоби
+    jacobi_matrix_norm = linalg.norm(value_of_jacobi_matrix, np.inf)
+    # Вывод нормы матрицы Якоби
+    out_file.write('\nНорма матрицы Якоби = {0}'.format(jacobi_matrix_norm))
     # Вывод заголовка
     out_file.write('\nItr   |   x   |   y   | Норма невязки | F1 | F2\n')
+    # Вычисление нормы невязки
+    residual_norm = max(abs(solve(f1.subs(sym_x, x0))[0]), abs(solve(f2.subs(sym_y, y0))[0]))
     # Вычисление значений с необходимой точностью
-    while norm >= eps:
+    while residual_norm >= eps:
         # Шаг итерации
         ++i
         # Подстановка предыдущего приближения
         xi = x
         yi = y
-        # Вычисление Якобиана
-        jacobean = Matrix([df1dx, df1dy],
-                          [df2dx, df2dy]).linalg.inv()
+        # Создание кортежей соответствия переменных и  их значений
+        con_list = [(sym_x, x), (sym_y, y)]
+        con_list_i = [(sym_x, xi), (sym_y, yi)]
+        # Вычисление матрицы Якоби в точке (xi, yi)
+        jacobi_matrix_value = jacobi_matrix.subs(con_list)
         # Вычисление нового приближения
-        x = xi - jacobean[0][0] * f1.sub(con_list_i) - jacobean[0][1] * f2.sub(con_list_i)
-        y = yi - jacobean[1][0] * f1.sub(con_list_i) - jacobean[1][1] * f2.sub(con_list_i)
+        x = xi - jacobi_matrix_value[0][0] * f1.sub(con_list_i) - jacobi_matrix_value[0][1] * f2.sub(con_list_i)
+        y = yi - jacobi_matrix_value[1][0] * f1.sub(con_list_i) - jacobi_matrix_value[1][1] * f2.sub(con_list_i)
         # Вычисление нормы невязки
-        residual_norm = max(abs((x - xi), (y - yi)))
+        residual_norm = max(abs(x - xi), abs(y - yi))
         # Вывод результатов
         out_file.write(
-            i + ' ' + x + ' ' + y + ' ' + residual_norm + ' ' + f1.sub(con_list) + ' ' + f2.sub(con_list) + '\n')
+            '{0} {1} {2} {3} {4} {5}\n'.format(i, x, y, residual_norm, f1_value, f2_value))
 
 
 # Метод градиентного спуска
