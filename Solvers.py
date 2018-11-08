@@ -1,6 +1,5 @@
 from __future__ import division
 
-import numpy as np
 from numpy import *
 from sympy import *
 
@@ -69,7 +68,6 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
 
 
 # Метод Ньютона
-# a,b - границы отрезка, x0, xn  - вычисляемые приближения
 def newton_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('\nМетод Ньютона\n')
     i = 0
@@ -153,7 +151,7 @@ def gradient_descent_method(x, y, f1, f2, eps, out_file):
         x0 = x
         y0 = y
         # Вычисление alpha
-        alpha = dihotomia(f, -1000, 100000, x0, y0, eps)
+        alpha: float_ = dihotomia(f, -1000, 100000, x0, y0, eps)
         # Создание кортежей соответствия переменных и  их значений
         con_list0 = [(sym_x, x0), (sym_y, y0)]
         # Вычисление следующего приближения
@@ -203,5 +201,5 @@ def g(f, x, y, alpha):
     y1 = (y - alpha * dfdy.subs(con_list))
     # Новый кортеж соответствия
     con_list_1 = [(sym_x, x1), (sym_y, y1)]
-
+    # Возврат значения функции в точке (x1,y1)
     return f.subs(con_list_1)
