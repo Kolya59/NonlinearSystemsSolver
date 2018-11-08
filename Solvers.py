@@ -1,5 +1,6 @@
 from __future__ import division
 
+import numpy as np
 from numpy import *
 from sympy import *
 
@@ -70,7 +71,7 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
 # Метод Ньютона
 # a,b - границы отрезка, x0, xn  - вычисляемые приближения
 def newton_method(x0, y0, f1, f2, eps, out_file):
-    out_file.write('Метод Ньютона\n')
+    out_file.write('\nМетод Ньютона\n')
     i = 0
     xi = x = x0
     yi = y = y0
@@ -130,17 +131,17 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
 
 # Метод градиентного спуска
 def gradient_descent_method(x, y, f1, f2, eps, out_file):
-    out_file.write('\n Метод градиентного спуска\n')
+    out_file.write('\nМетод градиентного спуска\n')
     i = 0
     # TODO: Что такое k
     k = 0.5
-    # ff(x,y) = (f1(x,y))^2 + (f2(x,y))ˆ2
-    ff = f1 ** 2 + f2 ** 2
+    # f(x,y) = (f1(x,y))^2 + (f2(x,y))ˆ2
+    f = f1 ** 2 + f2 ** 2
     # Вывод градиента
-    out_file.write('Градиент\n{0}'.format(str([diff(ff, sym_x), diff(ff, sym_y)])
-                                          .replace(']', '')
-                                          .replace('[', '')
-                                          .replace(',', '\n')))
+    out_file.write('\nГрадиент\n{0}'.format(str([diff(f, sym_x), diff(f, sym_y)])
+                                            .replace(']', '')
+                                            .replace('[', '')
+                                            .replace(',', '\n')))
     # Вывод заголовка
     out_file.write('\nItr |   x           |       y         |       Alpha       | Норма невязки     |     F1          '
                    ' |       F2        |       FF     | k |\n')
@@ -152,23 +153,23 @@ def gradient_descent_method(x, y, f1, f2, eps, out_file):
         x0 = x
         y0 = y
         # Вычисление alpha
-        alpha = dihotomia(ff, -1000, 100000, x0, y0, eps)
+        alpha = dihotomia(f, -1000, 100000, x0, y0, eps)
         # Создание кортежей соответствия переменных и  их значений
         con_list0 = [(sym_x, x0), (sym_y, y0)]
         # Вычисление следующего приближения
-        x = x0 - alpha * diff(ff, sym_x).subs(con_list0)
-        y = y0 - alpha * diff(ff, sym_y).subs(con_list0)
+        x = x0 - alpha * diff(f, sym_x).subs(con_list0)
+        y = y0 - alpha * diff(f, sym_y).subs(con_list0)
         # Создание кортежей соответствия переменных и  их значений
         con_list = [(sym_x, x), (sym_y, y)]
         # Вычисление нормы
-        residual_norm = max(abs(diff(f1, sym_x).subs(con_list)), abs(diff(f2, sym_y).subs(con_list)))
+        residual_norm = max(abs(diff(f, sym_x).subs(con_list)), abs(diff(f, sym_y).subs(con_list)))
         # Вывод результатов
         out_file.write('{0} {1} {2} {3} {4} {5} {6} {7} {8}\n'.format(i, x, y, alpha, residual_norm, f1.subs(con_list),
-                                                                      f2.subs(con_list), ff.subs(con_list), k))
+                                                                      f2.subs(con_list), f.subs(con_list), k))
 
 
 # Метод половинного деления
-def dihotomia(FF, a0, b0, x, y, eps) -> object:
+def dihotomia(f, a0, b0, x, y, eps) -> object:
     # Величина на которую мы отклонимся от середины отрезка
     delta = 0.5 * eps
     # Отрезок локализации минимума
@@ -180,7 +181,7 @@ def dihotomia(FF, a0, b0, x, y, eps) -> object:
         lk = (ak + bk - delta) / 2
         mk = (ak + bk + delta) / 2
         # Проверка в какую часть попадает точка минимума слева от разбиения или справа, выбор соответствующей точки
-        if g(FF, x, y, lk) <= g(FF, x, y, mk):
+        if g(f, x, y, lk) <= g(f, x, y, mk):
             # Правая граница отрезка локализации равна mk
             bk = mk
         else:
@@ -190,9 +191,17 @@ def dihotomia(FF, a0, b0, x, y, eps) -> object:
     return (ak + bk) / 2
 
 
+# Поиск точки минимума
 def g(f, x, y, alpha):
+    # Первые производные
     dfdx = diff(f, sym_x)
     dfdy = diff(f, sym_y)
+    # Кортеж соответствия
     con_list = [(sym_x, x), (sym_y, y)]
-    return (x - alpha * dfdx.subs(con_list)) ** 2 + \
-           (y - alpha * dfdy.subs(con_list)) ** 2
+    # Новое разбиение
+    x1 = (x - alpha * dfdx.subs(con_list))
+    y1 = (y - alpha * dfdy.subs(con_list))
+    # Новый кортеж соответствия
+    con_list_1 = [(sym_x, x1), (sym_y, y1)]
+
+    return f.subs(con_list_1)
