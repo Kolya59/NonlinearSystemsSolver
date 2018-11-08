@@ -1,6 +1,7 @@
 from __future__ import division
 
 from numpy import *
+import numpy as np
 from sympy import *
 
 sym_x, sym_y = symbols('x y')
