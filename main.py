@@ -6,8 +6,8 @@ from Solvers import *
 eps = 10E-4
 
 # Ввод данных
-input_file = open('test.txt', 'r')
-output_file = open('out.txt', 'w')
+input_file = open('test2.txt', 'r')
+output_file = open('out2.txt', 'w')
 
 # Первая функция в виде F1 = 0
 f1_str = input_file.readline().replace('\n', '')

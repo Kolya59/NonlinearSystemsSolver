@@ -16,10 +16,10 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
     xi = x0
     yi = y0
     # Вычисление производных
-    df1dx = diff(f1, sym_x)
-    df1dy = diff(f1, sym_y)
-    df2dx = diff(f2, sym_x)
-    df2dy = diff(f2, sym_y)
+    df1dx = diff(solve(f1, sym_y)[0], sym_x)
+    df1dy = diff(solve(f1, sym_y)[0], sym_y)
+    df2dx = diff(solve(f2, sym_x)[0], sym_x)
+    df2dy = diff(solve(f2, sym_x)[0], sym_y)
     # Создание кортежей соответствия переменных и  их значений
     con_list_i = [(sym_x, xi), (sym_y, yi)]
     # Создание матрицы Якоби
@@ -54,7 +54,7 @@ def simple_iteration_method(x0, y0, f1, f2, eps, out_file):
         con_list = [(sym_x, x), (sym_y, y)]
         con_list_i = [(sym_x, xi), (sym_y, yi)]
         # Вычисление нормы Якобиана
-        jacobi_matrix_norm = linalg.norm(jacobi_matrix.subs(con_list_i), np.inf)
+        jacobi_matrix_norm = linalg.norm(jacobi_matrix.subs(con_list), np.inf)
         # Вычисление значения функций в точке xi,yi
         f1_value = f1.subs(con_list)
         f2_value = f2.subs(con_list)
@@ -94,10 +94,6 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
     out_file.write('\nЗначение матрицы Якоби в точке (x0,y0)\n{0}'
                    .format(np.array2string(np.array(value_of_jacobi_matrix).astype(float64)))
                    .replace('[', '').replace(']', ''))
-    # Вычисление нормы матрицы Якоби
-    jacobi_matrix_norm = linalg.norm(value_of_jacobi_matrix, np.inf)
-    # Вывод нормы матрицы Якоби
-    out_file.write('\nНорма матрицы Якоби = {0}'.format(jacobi_matrix_norm))
     # Вывод заголовка
     out_file.write('\nItr |   x           |       y       | Норма невязки     |     F1        |       F2        |\n')
     # Вычисление нормы невязки
@@ -112,10 +108,12 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
         # Создание кортежей соответствия переменных и  их значений
         con_list_i = [(sym_x, xi), (sym_y, yi)]
         # Вычисление матрицы, обратной матрице Якоби в точке (xi, yi)
-        jacobi_matrix_value = (jacobi_matrix ** -1).subs(con_list_i)
+        reverse_jacobi_matrix_value = jacobi_matrix.subs(con_list_i) ** (-1)
         # Вычисление нового приближения
-        x = xi - jacobi_matrix_value[0, 0] * f1.subs(con_list_i) - jacobi_matrix_value[0, 1] * f2.subs(con_list_i)
-        y = yi - jacobi_matrix_value[1, 0] * f1.subs(con_list_i) - jacobi_matrix_value[1, 1] * f2.subs(con_list_i)
+        x = xi - reverse_jacobi_matrix_value[0, 0] * f1.subs(con_list_i) \
+            - reverse_jacobi_matrix_value[0, 1] * f2.subs(con_list_i)
+        y = yi - reverse_jacobi_matrix_value[1, 0] * f1.subs(con_list_i) \
+            - reverse_jacobi_matrix_value[1, 1] * f2.subs(con_list_i)
         # Создание кортежей соответствия переменных и  их значений
         con_list = [(sym_x, x), (sym_y, y)]
         # Вычисление значения функции в точке (x,y)
@@ -128,12 +126,10 @@ def newton_method(x0, y0, f1, f2, eps, out_file):
             '{0} {1} {2} {3} {4} {5}\n'.format(i, x, y, residual_norm, f1_value, f2_value))
 
 
-# Метод градиентного спуска
+# Метод наискорейшего спуска
 def gradient_descent_method(x, y, f1, f2, eps, out_file):
-    out_file.write('\nМетод градиентного спуска\n')
+    out_file.write('\nМетод наискорейшего спуска\n')
     i = 0
-    # TODO: Что такое k
-    k = 0.5
     # f(x,y) = (f1(x,y))^2 + (f2(x,y))ˆ2
     f = f1 ** 2 + f2 ** 2
     # Вывод градиента
@@ -143,7 +139,7 @@ def gradient_descent_method(x, y, f1, f2, eps, out_file):
                                             .replace(',', '\n')))
     # Вывод заголовка
     out_file.write('\nItr |   x           |       y         |       Alpha       | Норма невязки     |     F1          '
-                   ' |       F2        |       FF     | k |\n')
+                   ' |       F2        |       FF     |\n')
     # Вычисление нормы
     residual_norm = eps + 1
     while residual_norm >= eps:
@@ -152,7 +148,7 @@ def gradient_descent_method(x, y, f1, f2, eps, out_file):
         x0 = x
         y0 = y
         # Вычисление alpha
-        alpha: float_ = dihotomia(f, -1000, 100000, x0, y0, eps)
+        alpha = dihotomia(f, -1000, 100000, x0, y0, eps)
         # Создание кортежей соответствия переменных и  их значений
         con_list0 = [(sym_x, x0), (sym_y, y0)]
         # Вычисление следующего приближения
@@ -163,8 +159,8 @@ def gradient_descent_method(x, y, f1, f2, eps, out_file):
         # Вычисление нормы
         residual_norm = max(abs(diff(f, sym_x).subs(con_list)), abs(diff(f, sym_y).subs(con_list)))
         # Вывод результатов
-        out_file.write('{0} {1} {2} {3} {4} {5} {6} {7} {8}\n'.format(i, x, y, alpha, residual_norm, f1.subs(con_list),
-                                                                      f2.subs(con_list), f.subs(con_list), k))
+        out_file.write('{0} {1} {2} {3} {4} {5} {6} {7}\n'.format(i, x, y, alpha, residual_norm, f1.subs(con_list),
+                                                                f2.subs(con_list), f.subs(con_list)))
 
 
 # Метод половинного деления
